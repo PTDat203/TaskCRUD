@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { tap, catchError, of } from 'rxjs';
 
 interface Task {
@@ -13,6 +13,20 @@ interface Task {
   createdAt: string;
 }
 
+interface AuthPayload {
+  token: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface UserSummary {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
+
 @Component({
   selector: 'app-task-crud',
   standalone: true,
@@ -22,12 +36,25 @@ interface Task {
 })
 export class TaskCrudComponent implements OnInit {
   private apiUrl = '/api/Tasks';
+  private authUrl = '/api/Auth';
 
   tasks: Task[] = [];
   filteredTasks: Task[] = []; // Tasks hiển thị theo trang
   taskForm: Task = this.getEmptyTask();
   isEditMode = false;
   loading = false;
+  errorMessage = '';
+
+  loginForm = {
+    email: '',
+    password: ''
+  };
+
+  registerForm = {
+    name: '',
+    email: '',
+    password: ''
+  };
 
   // Paging
   currentPage = 1;
@@ -39,18 +66,29 @@ export class TaskCrudComponent implements OnInit {
   deadlineDate = '';
   deadlineTime = '00:00';
 
+  token = '';
+  currentUserName = '';
+  currentUserEmail = '';
+  currentUserRole = '';
+  users: UserSummary[] = [];
+  updatingRoleUserId: number | null = null;
+
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    this.loadTasks();
+    this.restoreAuthState();
+    if (this.isAuthenticated) {
+      this.loadTasks();
+      this.loadUsers();
+    }
   }
 
   loadTasks(): void {
+    if (!this.isAuthenticated) return;
     this.loading = true;
-    console.log('Đang gọi API:', this.apiUrl);
-    this.http.get<Task[]>(this.apiUrl).pipe(
+    this.errorMessage = '';
+    this.http.get<Task[]>(this.apiUrl, this.getAuthOptions()).pipe(
       tap(data => {
-        console.log('Data nhận được:', data);
         // Sắp xếp: chưa hoàn thành trước theo deadline, hoàn thành xuống dưới
         this.tasks = data.sort((a, b) => {
           // Hoàn thành xuống dưới
@@ -67,8 +105,7 @@ export class TaskCrudComponent implements OnInit {
         this.cdr.detectChanges();
       }),
       catchError(err => {
-        console.error('Lỗi khi tải tasks:', err);
-        console.error('Error details:', err.message, err.status);
+        this.handleHttpError(err, 'Không thể tải danh sách task.');
         this.loading = false;
         return of([]);
       })
@@ -76,9 +113,10 @@ export class TaskCrudComponent implements OnInit {
   }
 
   saveTask(): void {
-    console.log('1. Bắt đầu saveTask');
-    console.log('   taskForm:', this.taskForm);
-    console.log('   deadlineDate:', this.deadlineDate, 'deadlineTime:', this.deadlineTime);
+    if (!this.isAdmin) {
+      this.errorMessage = 'Chỉ Admin mới có quyền thêm/sửa task.';
+      return;
+    }
 
     if (!this.taskForm.title.trim()) {
       alert('Vui lòng nhập tiêu đề!');
@@ -88,39 +126,32 @@ export class TaskCrudComponent implements OnInit {
     // Kết hợp date và time thành deadline
     if (this.deadlineDate) {
       this.taskForm.deadline = `${this.deadlineDate}T${this.deadlineTime}:00`;
-      console.log('   deadline sau khi gộp:', this.taskForm.deadline);
     }
 
     if (this.isEditMode) {
-      console.log('2. Đang UPDATE task:', this.taskForm.id);
-      this.http.put(`${this.apiUrl}/${this.taskForm.id}`, this.taskForm).pipe(
+      this.http.put(`${this.apiUrl}/${this.taskForm.id}`, this.taskForm, this.getAuthOptions()).pipe(
         tap(() => {
-          console.log('3. Update thành công');
           this.loadTasks();
           this.resetForm();
         }),
         catchError(err => {
-          console.error('Lỗi khi cập nhật:', err);
+          this.handleHttpError(err, 'Không thể cập nhật task.');
           return of(null);
         })
       ).subscribe();
     } else {
-      console.log('2. Đang tạo mới task');
       const newTask = {
         ...this.taskForm,
         createdAt: this.getLocalDateTime()
       };
-      console.log('   newTask sẽ gửi:', newTask);
 
-      this.http.post(this.apiUrl, newTask).pipe(
-        tap((res) => {
-          console.log('3. Create thành công, response:', res);
+      this.http.post(this.apiUrl, newTask, this.getAuthOptions()).pipe(
+        tap(() => {
           this.loadTasks();
           this.resetForm();
         }),
         catchError(err => {
-          console.error('Lỗi khi thêm mới:', err);
-          console.error('   Status:', err.status, 'Message:', err.message);
+          this.handleHttpError(err, 'Không thể thêm task mới.');
           return of(null);
         })
       ).subscribe();
@@ -128,6 +159,7 @@ export class TaskCrudComponent implements OnInit {
   }
 
   editTask(task: Task): void {
+    if (!this.isAdmin) return;
     this.taskForm = { ...task };
     this.isEditMode = true;
     // Tách deadline thành date và time
@@ -139,11 +171,16 @@ export class TaskCrudComponent implements OnInit {
   }
 
   deleteTask(id: number): void {
+    if (!this.isAdmin) {
+      this.errorMessage = 'Chỉ Admin mới có quyền xóa task.';
+      return;
+    }
+
     if (confirm('Bạn có chắc muốn xóa task này?')) {
-      this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      this.http.delete(`${this.apiUrl}/${id}`, this.getAuthOptions()).pipe(
         tap(() => this.loadTasks()),
         catchError(err => {
-          console.error('Lỗi khi xóa:', err);
+          this.handleHttpError(err, 'Không thể xóa task.');
           return of(null);
         })
       ).subscribe();
@@ -155,6 +192,66 @@ export class TaskCrudComponent implements OnInit {
     this.isEditMode = false;
     this.deadlineDate = '';
     this.deadlineTime = '00:00';
+  }
+
+  register(): void {
+    this.errorMessage = '';
+    if (!this.registerForm.name.trim() || !this.registerForm.email.trim() || !this.registerForm.password.trim()) {
+      this.errorMessage = 'Vui lòng nhập đầy đủ thông tin đăng ký.';
+      return;
+    }
+
+    this.http.post<AuthPayload>(`${this.authUrl}/register`, this.registerForm).pipe(
+      tap((res) => {
+        this.applyAuth(res);
+        this.registerForm = { name: '', email: '', password: '' };
+        this.loginForm = { email: '', password: '' };
+        this.loadTasks();
+        this.loadUsers();
+      }),
+      catchError(err => {
+        this.handleHttpError(err, 'Đăng ký thất bại.');
+        return of(null);
+      })
+    ).subscribe();
+  }
+
+  login(): void {
+    this.errorMessage = '';
+    if (!this.loginForm.email.trim() || !this.loginForm.password.trim()) {
+      this.errorMessage = 'Vui lòng nhập email và mật khẩu.';
+      return;
+    }
+
+    this.http.post<AuthPayload>(`${this.authUrl}/login`, this.loginForm).pipe(
+      tap((res) => {
+        this.applyAuth(res);
+        this.loadTasks();
+        this.loadUsers();
+      }),
+      catchError(err => {
+        this.handleHttpError(err, 'Đăng nhập thất bại.');
+        return of(null);
+      })
+    ).subscribe();
+  }
+
+  logout(): void {
+    this.token = '';
+    this.currentUserName = '';
+    this.currentUserEmail = '';
+    this.currentUserRole = '';
+    this.tasks = [];
+    this.filteredTasks = [];
+    this.totalItems = 0;
+    this.totalPages = 0;
+    this.currentPage = 1;
+    this.users = [];
+    this.updatingRoleUserId = null;
+    localStorage.removeItem('token');
+    localStorage.removeItem('name');
+    localStorage.removeItem('email');
+    localStorage.removeItem('role');
   }
 
   getStatusLabel(status: string): string {
@@ -246,5 +343,109 @@ export class TaskCrudComponent implements OnInit {
       status: 'pending',
       createdAt: ''
     };
+  }
+
+  get isAuthenticated(): boolean {
+    return !!this.token;
+  }
+
+  get isAdmin(): boolean {
+    return this.currentUserRole.toUpperCase() === 'ADMIN';
+  }
+
+  loadUsers(): void {
+    if (!this.isAdmin) {
+      this.users = [];
+      return;
+    }
+
+    this.http.get<UserSummary[]>(`${this.authUrl}/users`, this.getAuthOptions()).pipe(
+      tap((data) => {
+        this.users = data.map((u) => ({
+          ...u,
+          role: (u.role ?? '').toUpperCase()
+        }));
+      }),
+      catchError((err) => {
+        this.handleHttpError(err, 'Không thể tải danh sách user.');
+        return of([]);
+      })
+    ).subscribe();
+  }
+
+  updateUserRole(user: UserSummary, role: string): void {
+    if (!this.isAdmin) {
+      this.errorMessage = 'Chỉ Admin mới có quyền đổi role.';
+      return;
+    }
+
+    const nextRole = role.toUpperCase();
+    if (nextRole !== 'USER' && nextRole !== 'ADMIN') {
+      this.errorMessage = 'Role không hợp lệ.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.updatingRoleUserId = user.id;
+    this.http.put<UserSummary>(
+      `${this.authUrl}/users/${user.id}/role`,
+      { role: nextRole },
+      this.getAuthOptions()
+    ).pipe(
+      tap((updatedUser) => {
+        this.users = this.users.map((item) =>
+          item.id === updatedUser.id
+            ? { ...item, role: updatedUser.role.toUpperCase() }
+            : item
+        );
+        this.updatingRoleUserId = null;
+      }),
+      catchError((err) => {
+        this.updatingRoleUserId = null;
+        this.handleHttpError(err, 'Không thể cập nhật role.');
+        return of(null);
+      })
+    ).subscribe();
+  }
+
+  private getAuthOptions(): { headers: HttpHeaders } {
+    return {
+      headers: new HttpHeaders({
+        Authorization: `Bearer ${this.token}`
+      })
+    };
+  }
+
+  private applyAuth(payload: AuthPayload): void {
+    this.token = payload.token;
+    this.currentUserName = payload.name;
+    this.currentUserEmail = payload.email;
+    this.currentUserRole = payload.role;
+
+    localStorage.setItem('token', payload.token);
+    localStorage.setItem('name', payload.name);
+    localStorage.setItem('email', payload.email);
+    localStorage.setItem('role', payload.role);
+  }
+
+  private restoreAuthState(): void {
+    this.token = localStorage.getItem('token') ?? '';
+    this.currentUserName = localStorage.getItem('name') ?? '';
+    this.currentUserEmail = localStorage.getItem('email') ?? '';
+    this.currentUserRole = localStorage.getItem('role') ?? '';
+  }
+
+  private handleHttpError(err: any, fallbackMessage: string): void {
+    if (err?.status === 401) {
+      this.errorMessage = 'Phiên đăng nhập hết hạn hoặc chưa đăng nhập.';
+      return;
+    }
+
+    if (err?.status === 403) {
+      this.errorMessage = 'Bạn không có quyền thực hiện chức năng này.';
+      return;
+    }
+
+    this.errorMessage = err?.error || fallbackMessage;
   }
 }

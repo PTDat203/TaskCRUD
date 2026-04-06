@@ -7,7 +7,6 @@ namespace TaskCRUD.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "ADMIN")]
     public class TasksController : ControllerBase
     {
         private readonly ITaskService _taskService;
@@ -23,6 +22,7 @@ namespace TaskCRUD.Controllers
         /// Get all tasks
         /// </summary>
         [HttpGet]
+        [Authorize(Roles = "ADMIN,USER")]
         public async Task<ActionResult<List<TaskDto>>> GetAllTasks()
         {
             try
@@ -41,6 +41,7 @@ namespace TaskCRUD.Controllers
         /// Get task by ID
         /// </summary>
         [HttpGet("{id}")]
+        [Authorize(Roles = "ADMIN,USER")]
         public async Task<ActionResult<TaskDto>> GetTaskById(int id)
         {
             try
@@ -64,6 +65,7 @@ namespace TaskCRUD.Controllers
         /// Create a new task
         /// </summary>
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<TaskDto>> CreateTask(CreateTaskDto dto)
         {
             try
@@ -87,6 +89,7 @@ namespace TaskCRUD.Controllers
         /// Update an existing task
         /// </summary>
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<TaskDto>> UpdateTask(int id, UpdateTaskDto dto)
         {
             try
@@ -115,6 +118,7 @@ namespace TaskCRUD.Controllers
         /// Delete a task
         /// </summary>
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult> DeleteTask(int id)
         {
             try

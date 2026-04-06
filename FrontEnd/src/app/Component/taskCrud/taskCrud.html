@@ -1,7 +1,91 @@
 <div class="task-container">
   <h2>Task Quản lý dữ liệu</h2>
 
-  <div class="task-form">
+  <p *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</p>
+
+  <div class="auth-box" *ngIf="!isAuthenticated">
+    <div class="auth-panel">
+      <h3>Đăng nhập</h3>
+      <form (ngSubmit)="login()">
+        <div class="form-group">
+          <label for="loginEmail">Email:</label>
+          <input id="loginEmail" [(ngModel)]="loginForm.email" name="loginEmail" type="email" required />
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Mật khẩu:</label>
+          <input id="loginPassword" [(ngModel)]="loginForm.password" name="loginPassword" type="password" required />
+        </div>
+        <button type="submit" class="btn-save">Đăng nhập</button>
+      </form>
+    </div>
+
+    <div class="auth-panel">
+      <h3>Đăng ký</h3>
+      <form (ngSubmit)="register()">
+        <div class="form-group">
+          <label for="registerName">Họ tên:</label>
+          <input id="registerName" [(ngModel)]="registerForm.name" name="registerName" required />
+        </div>
+        <div class="form-group">
+          <label for="registerEmail">Email:</label>
+          <input id="registerEmail" [(ngModel)]="registerForm.email" name="registerEmail" type="email" required />
+        </div>
+        <div class="form-group">
+          <label for="registerPassword">Mật khẩu:</label>
+          <input id="registerPassword" [(ngModel)]="registerForm.password" name="registerPassword" type="password" required />
+        </div>
+        <button type="submit" class="btn-save">Đăng ký</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="user-info" *ngIf="isAuthenticated">
+    <div>
+      Xin chào <strong>{{ currentUserName }}</strong> ({{ currentUserRole }}) - {{ currentUserEmail }}
+    </div>
+    <button class="btn-cancel" type="button" (click)="logout()">Đăng xuất</button>
+  </div>
+
+  <div class="user-management" *ngIf="isAuthenticated && isAdmin">
+    <h3>Quản lý User</h3>
+    <table *ngIf="users.length > 0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Họ tên</th>
+          <th>Email</th>
+          <th>Role hiện tại</th>
+          <th>Cập nhật role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.role }}</td>
+          <td class="role-actions">
+            <select #roleSelect [value]="user.role">
+              <option value="USER">USER</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+            <button
+              class="btn-edit"
+              type="button"
+              [disabled]="updatingRoleUserId === user.id"
+              (click)="updateUserRole(user, roleSelect.value)">
+              {{ updatingRoleUserId === user.id ? 'Đang lưu...' : 'Lưu' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div *ngIf="users.length === 0" class="no-data">
+      Chưa có user nào.
+    </div>
+  </div>
+
+  <div class="task-form" *ngIf="isAuthenticated && isAdmin">
     <h3>{{ isEditMode ? 'Sửa Task' : 'Thêm Task Mới' }}</h3>
     <form (ngSubmit)="saveTask()">
       <div class="form-group">
@@ -67,7 +151,7 @@
   </div>
 
 
-  <div class="task-list">
+  <div class="task-list" *ngIf="isAuthenticated">
     <h3>Danh sách Task ({{ totalItems }})</h3>
 
     <table *ngIf="filteredTasks.length > 0">
@@ -95,8 +179,13 @@
           </td>
           <td class="date-cell">{{ formatCreatedAt(task.createdAt) }}</td>
           <td class="actions">
+            <ng-container *ngIf="isAdmin; else noPermissionAction">
             <button class="btn-edit" (click)="editTask(task)">Sửa</button>
             <button class="btn-delete" (click)="deleteTask(task.id)">Xóa</button>
+            </ng-container>
+            <ng-template #noPermissionAction>
+              <span class="readonly-label">Chỉ xem</span>
+            </ng-template>
           </td>
         </tr>
       </tbody>
