@@ -1,0 +1,67 @@
+.user-management-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #4caf50;
+}
+
+.error-banner {
+  background: #ffe5e5;
+  color: #b30000;
+  border: 1px solid #ffb3b3;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+thead {
+  background: #4caf50;
+  color: white;
+}
+
+th,
+td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.role-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.role-actions select {
+  min-width: 90px;
+  padding: 6px 8px;
+}
+
+.btn-save {
+  background: #2196f3;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.no-data {
+  text-align: center;
+  padding: 30px;
+  color: #999;
+}

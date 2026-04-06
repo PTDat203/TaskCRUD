@@ -1,0 +1,83 @@
+<div class="task-container">
+  <h2>Quản lý Task</h2>
+  <p *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</p>
+
+  <div class="task-form" *ngIf="authService.isAdmin">
+    <h3>{{ isEditMode ? 'Sửa Task' : 'Thêm Task Mới' }}</h3>
+    <form (ngSubmit)="saveTask()">
+      <div class="form-group">
+        <label for="title">Tiêu đề:</label>
+        <input id="title" [(ngModel)]="taskForm.title" name="title" required />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Mô tả:</label>
+        <textarea id="description" [(ngModel)]="taskForm.description" name="description" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="deadline">Deadline:</label>
+        <div style="display: flex; gap: 10px;">
+          <input id="deadline" [(ngModel)]="deadlineDate" name="deadlineDate" type="date" style="flex: 1;" />
+          <input [(ngModel)]="deadlineTime" name="deadlineTime" type="time" style="flex: 1;" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Trạng thái:</label>
+        <select id="status" [(ngModel)]="taskForm.status" name="status">
+          <option value="pending">Chưa hoàn thành</option>
+          <option value="in-progress">Đang thực hiện</option>
+          <option value="completed">Hoàn thành</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-save">{{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}</button>
+        <button type="button" class="btn-cancel" (click)="resetForm()">Hủy</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="task-list">
+    <h3>Danh sách Task ({{ totalItems }})</h3>
+    <table *ngIf="filteredTasks.length > 0">
+      <thead>
+        <tr>
+          <th>STT</th>
+          <th>Tiêu đề</th>
+          <th>Mô tả</th>
+          <th>Deadline</th>
+          <th>Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let task of filteredTasks; let i = index">
+          <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+          <td>{{ task.title }}</td>
+          <td>{{ task.description }}</td>
+          <td class="deadline-cell">{{ formatDeadline(task.deadline) }}</td>
+          <td><span [ngClass]="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span></td>
+          <td class="date-cell">{{ formatCreatedAt(task.createdAt) }}</td>
+          <td class="actions">
+            <ng-container *ngIf="authService.isAdmin; else readOnly">
+              <button class="btn-edit" (click)="editTask(task)">Sửa</button>
+              <button class="btn-delete" (click)="deleteTask(task.id)">Xóa</button>
+            </ng-container>
+            <ng-template #readOnly><span class="readonly-label">Chỉ xem</span></ng-template>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button (click)="prevPage()" [disabled]="currentPage === 1">«</button>
+      <button *ngFor="let page of getPages()" (click)="goToPage(page)" [class.active]="currentPage === page">{{ page }}</button>
+      <button (click)="nextPage()" [disabled]="currentPage === totalPages">»</button>
+    </div>
+
+    <div *ngIf="filteredTasks.length === 0" class="no-data">Chưa có task nào.</div>
+  </div>
+</div>

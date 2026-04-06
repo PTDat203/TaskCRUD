@@ -1,0 +1,40 @@
+<div class="user-management-container">
+  <h2>Quản lý User</h2>
+
+  <p *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</p>
+
+  <table *ngIf="users.length > 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Họ tên</th>
+        <th>Email</th>
+        <th>Role hiện tại</th>
+        <th>Cập nhật role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users">
+        <td>{{ user.id }}</td>
+        <td>{{ user.name }}</td>
+        <td>{{ user.email }}</td>
+        <td>{{ user.role }}</td>
+        <td class="role-actions">
+          <select #roleSelect [value]="user.role">
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+          <button
+            class="btn-save"
+            type="button"
+            [disabled]="updatingRoleUserId === user.id"
+            (click)="updateUserRole(user, roleSelect.value)">
+            {{ updatingRoleUserId === user.id ? 'Đang lưu...' : 'Lưu' }}
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="users.length === 0" class="no-data">Chưa có user nào.</div>
+</div>

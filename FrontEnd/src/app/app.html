@@ -1,1 +1,16 @@
+<nav class="top-nav">
+  <div class="left-links">
+    <a routerLink="/login" *ngIf="!authService.isAuthenticated">Đăng nhập</a>
+    <a routerLink="/register" *ngIf="!authService.isAuthenticated">Đăng ký</a>
+
+    <a routerLink="/tasks" *ngIf="authService.isAuthenticated">Quản lý Task</a>
+    <a routerLink="/users" *ngIf="authService.isAuthenticated && authService.isAdmin">Quản lý User</a>
+  </div>
+
+  <div class="right-info" *ngIf="authService.isAuthenticated">
+    <span>{{ authService.name }} ({{ authService.role }})</span>
+    <button (click)="logout()">Đăng xuất</button>
+  </div>
+</nav>
+
 <router-outlet></router-outlet>
