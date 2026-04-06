@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule, HttpHeaders } from '@angular/common/http';
-import { tap, catchError, of } from 'rxjs';
+import { tap, catchError, of, finalize } from 'rxjs';
 
 interface Task {
   id: number;
@@ -398,12 +398,13 @@ export class TaskCrudComponent implements OnInit {
             ? { ...item, role: updatedUser.role.toUpperCase() }
             : item
         );
-        this.updatingRoleUserId = null;
       }),
       catchError((err) => {
-        this.updatingRoleUserId = null;
         this.handleHttpError(err, 'Không thể cập nhật role.');
         return of(null);
+      }),
+      finalize(() => {
+        this.updatingRoleUserId = null;
       })
     ).subscribe();
   }
