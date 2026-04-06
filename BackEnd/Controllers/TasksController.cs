@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskCRUD.DTOs;
 using TaskCRUD.Services;
@@ -6,6 +7,7 @@ namespace TaskCRUD.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN")]
     public class TasksController : ControllerBase
     {
         private readonly ITaskService _taskService;
