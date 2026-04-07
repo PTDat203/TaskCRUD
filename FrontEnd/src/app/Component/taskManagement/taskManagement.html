@@ -41,14 +41,66 @@
 
   <div class="task-list">
     <h3>Danh sách Task ({{ totalItems }})</h3>
-    <div style="margin-bottom: 10px;">
-      <label>Số bản ghi / trang: </label>
-      <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
-        <option [value]="4">4</option>
-        <option [value]="8">8</option>
-        <option [value]="12">12</option>
-        <option [value]="20">20</option>
-      </select>
+
+    <div class="task-filters">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="searchTitle">Tìm theo tiêu đề:</label>
+          <input
+            id="searchTitle"
+            type="text"
+            [(ngModel)]="searchTitle"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Nhập tiêu đề..."
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="searchStatus">Lọc theo trạng thái:</label>
+          <select
+            id="searchStatus"
+            [(ngModel)]="searchStatus"
+            (ngModelChange)="onFilterChange()"
+          >
+            <option value="">Tất cả</option>
+            <option value="pending">Chưa hoàn thành</option>
+            <option value="in-progress">Đang thực hiện</option>
+            <option value="completed">Hoàn thành</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-group">
+          <label for="searchDeadline">Tìm theo deadline:</label>
+          <input
+            id="searchDeadline"
+            type="date"
+            [(ngModel)]="searchDeadline"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="searchCreatedDate">Tìm theo ngày tạo:</label>
+          <input
+            id="searchCreatedDate"
+            type="date"
+            [(ngModel)]="searchCreatedDate"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+
+        <div class="filter-group page-size-group">
+          <label>Số bản ghi / trang: </label>
+          <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+            <option [value]="4">4</option>
+            <option [value]="8">8</option>
+            <option [value]="12">12</option>
+            <option [value]="20">20</option>
+          </select>
+        </div>
+      </div>
     </div>
     <table *ngIf="filteredTasks.length > 0">
       <thead>

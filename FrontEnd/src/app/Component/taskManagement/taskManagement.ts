@@ -39,6 +39,12 @@ export class TaskManagementComponent implements OnInit {
   deadlineDate = '';
   deadlineTime = '00:00';
 
+  // Search & filter fields
+  searchTitle = '';
+  searchStatus = '';
+  searchDeadline = '';
+  searchCreatedDate = '';
+
   constructor(
     private http: HttpClient,
     private cdr: ChangeDetectorRef,
@@ -65,8 +71,7 @@ export class TaskManagementComponent implements OnInit {
           if (a.status !== 'completed' && b.status === 'completed') return -1;
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
         });
-        this.totalItems = this.tasks.length;
-        this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+        this.currentPage = 1;
         this.updatePageData();
         this.loading = false;
         this.cdr.detectChanges();
@@ -178,9 +183,17 @@ export class TaskManagementComponent implements OnInit {
   }
 
   updatePageData(): void {
+    const filtered = this.getFilteredTasksList();
+    this.totalItems = filtered.length;
+    this.totalPages = this.pageSize > 0 ? Math.ceil(this.totalItems / this.pageSize) : 0;
+    if (this.currentPage < 1) this.currentPage = 1;
+    if (this.totalPages > 0 && this.currentPage > this.totalPages) {
+      this.currentPage = this.totalPages;
+    }
+
     const start = (this.currentPage - 1) * this.pageSize;
     const end = start + this.pageSize;
-    this.filteredTasks = this.tasks.slice(start, end);
+    this.filteredTasks = filtered.slice(start, end);
   }
 
   goToPage(page: number): void {
@@ -213,7 +226,11 @@ export class TaskManagementComponent implements OnInit {
     if (this.pageSize < 1) this.pageSize = 1;
   
     this.currentPage = 1;
-    this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+    this.updatePageData();
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
     this.updatePageData();
   }
 
@@ -262,5 +279,36 @@ export class TaskManagementComponent implements OnInit {
       return;
     }
     this.errorMessage = err?.error || fallbackMessage;
+  }
+
+  private getFilteredTasksList(): Task[] {
+    let result = [...this.tasks];
+
+    if (this.searchTitle.trim()) {
+      const keyword = this.searchTitle.trim().toLowerCase();
+      result = result.filter(task => task.title.toLowerCase().includes(keyword));
+    }
+
+    if (this.searchStatus) {
+      result = result.filter(task => task.status === this.searchStatus);
+    }
+
+    if (this.searchDeadline) {
+      result = result.filter(task => {
+        if (!task.deadline) return false;
+        const [datePart] = task.deadline.split('T');
+        return datePart === this.searchDeadline;
+      });
+    }
+
+    if (this.searchCreatedDate) {
+      result = result.filter(task => {
+        if (!task.createdAt) return false;
+        const [datePart] = task.createdAt.split('T');
+        return datePart === this.searchCreatedDate;
+      });
+    }
+
+    return result;
   }
 }

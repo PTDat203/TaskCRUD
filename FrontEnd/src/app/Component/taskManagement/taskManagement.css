@@ -36,6 +36,43 @@ h3 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+.task-filters {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.page-size-group {
+  margin-left: auto;
+}
+
 .form-group {
   margin-bottom: 15px;
 }
