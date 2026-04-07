@@ -93,10 +93,10 @@
 
         <div class="filter-group page-size-group">
           <label>Số bản ghi / trang: </label>
-          <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
-            <option [value]="4">4</option>
-            <option [value]="8">8</option>
-            <option [value]="12">12</option>
+          <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <option [value]="5">5</option>
+            <option [value]="10">10</option>
+            <option [value]="15">15</option>
             <option [value]="20">20</option>
           </select>
         </div>
@@ -122,12 +122,14 @@
           <td class="deadline-cell">{{ formatDeadline(task.deadline) }}</td>
           <td><span [ngClass]="getStatusClass(task.status)">{{ getStatusLabel(task.status) }}</span></td>
           <td class="date-cell">{{ formatCreatedAt(task.createdAt) }}</td>
-          <td class="actions">
-            <ng-container *ngIf="authService.isAdmin; else readOnly">
-              <button class="btn-edit" (click)="editTask(task)">Sửa</button>
-              <button class="btn-delete" (click)="deleteTask(task.id)">Xóa</button>
-            </ng-container>
-            <ng-template #readOnly><span class="readonly-label">Chỉ xem</span></ng-template>
+          <td class="actions-cell">
+            <div class="actions">
+              <ng-container *ngIf="authService.isAdmin; else readOnly">
+                <button class="btn-edit" (click)="editTask(task)">Sửa</button>
+                <button class="btn-delete" (click)="deleteTask(task.id)">Xóa</button>
+              </ng-container>
+              <ng-template #readOnly><span class="readonly-label">Chỉ xem</span></ng-template>
+            </div>
           </td>
         </tr>
       </tbody>
