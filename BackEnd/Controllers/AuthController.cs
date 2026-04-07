@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Linq;
 using TaskCRUD.Data;
 using TaskCRUD.DTOs;
 using TaskCRUD.Models;
@@ -26,18 +27,22 @@ namespace TaskCRUD.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<LoginResponseDto>> Register(RegisterRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.Name) ||
-                string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.Password))
+            var nonWhitespacePasswordLength = request.Password.Count(c => !char.IsWhiteSpace(c));
+            if (nonWhitespacePasswordLength < 8)
             {
-                return BadRequest("Name, email and password are required.");
+                return BadRequest("Mật khẩu phải có ít nhất 8 ký tự.");
+            }
+
+            if (!string.Equals(request.Password, request.ConfirmPassword, StringComparison.Ordinal))
+            {
+                return BadRequest("Mật khẩu xác nhận không khớp.");
             }
 
             var email = request.Email.Trim().ToLower();
             var existedUser = await _dbContext.Users.AnyAsync(u => u.Email.ToLower() == email);
             if (existedUser)
             {
-                return Conflict("Email already exists.");
+                return Conflict("Email đã được sử dụng.");
             }
 
             // Default role after register is USER.
@@ -66,11 +71,6 @@ namespace TaskCRUD.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<LoginResponseDto>> Login(LoginRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
-            {
-                return BadRequest("Email and password are required.");
-            }
-
             var email = request.Email.Trim().ToLower();
 
             var user = await _dbContext.Users
