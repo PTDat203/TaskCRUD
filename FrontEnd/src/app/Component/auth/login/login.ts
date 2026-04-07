@@ -1,4 +1,4 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -15,14 +15,13 @@ import {
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule,RouterModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, RouterModule],
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
 export class LoginComponent implements AfterViewInit {
   private authUrl = '/api/Auth';
   private authAbsoluteUrl = 'https://localhost:7167/api/Auth';
-  // TODO: move to env/config if needed
   private googleClientId = '705210796305-vgtq1ktp47ui5in07pgmgsd2k9fcjag6.apps.googleusercontent.com';
 
   form = {
@@ -35,7 +34,9 @@ export class LoginComponent implements AfterViewInit {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {}
 
   ngAfterViewInit(): void {
@@ -60,7 +61,8 @@ export class LoginComponent implements AfterViewInit {
         this.router.navigateByUrl('/tasks');
       }),
       catchError((err) => {
-        this.errorMessage = getFirstApiErrorMessage(err, 'Đăng nhập thất bại.');
+        this.errorMessage = err.error || 'Đăng nhập thất bại.';
+        this.cdr.detectChanges();
         return of(null);
       })
     ).subscribe();
@@ -87,9 +89,11 @@ export class LoginComponent implements AfterViewInit {
     g.accounts.id.initialize({
       client_id: this.googleClientId,
       callback: (response: { credential?: string }) => {
-        const idToken = response?.credential ?? '';
-        if (!idToken) return;
-        this.loginWithGoogle(idToken);
+        this.ngZone.run(() => {
+          const idToken = response?.credential ?? '';
+          if (!idToken) return;
+          this.loginWithGoogle(idToken);
+        });
       }
     });
 
@@ -105,16 +109,18 @@ export class LoginComponent implements AfterViewInit {
 
   private loginWithGoogle(idToken: string): void {
     this.errorMessage = '';
-    // Use absolute URL to avoid dev-proxy / certificate mismatch issues.
-    this.http.post<AuthPayload>(`${this.authAbsoluteUrl}/google-login`, { idToken }).pipe(
-      tap((res) => {
-        this.authService.applyAuth(res);
-        this.router.navigateByUrl('/tasks');
-      }),
-      catchError((err) => {
-        this.errorMessage = getFirstApiErrorMessage(err, 'Đăng nhập Google thất bại.');
-        return of(null);
-      })
-    ).subscribe();
+    this.ngZone.run(() => {
+      this.http.post<AuthPayload>(`${this.authAbsoluteUrl}/google-login`, { idToken }).pipe(
+        tap((res) => {
+          this.authService.applyAuth(res);
+          this.router.navigateByUrl('/tasks');
+        }),
+        catchError((err) => {
+          this.errorMessage = err.error || getFirstApiErrorMessage(err, 'Đăng nhập Google thất bại.');
+          this.cdr.detectChanges();
+          return of(null);
+        })
+      ).subscribe();
+    });
   }
 }

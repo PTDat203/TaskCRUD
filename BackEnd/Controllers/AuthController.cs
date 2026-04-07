@@ -82,13 +82,13 @@ namespace TaskCRUD.Controllers
 
             if (user == null)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized("Email hoặc Password không đúng!"); 
             }
 
             // Current project stores plain text password.
             if (user.Password != request.Password)
             {
-                return Unauthorized("Invalid email or password.");
+                return Unauthorized("Email hoặc Password không đúng!");
             }
 
             var token = _jwtService.GenerateToken(user);
