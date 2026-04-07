@@ -8,6 +8,7 @@ using TaskCRUD.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(dbOptions =>
     dbOptions.UseOracle(builder.Configuration.GetConnectionString("OracleConnection")));
@@ -50,7 +51,11 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperatio
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("Missing configuration: Jwt:Audience");
 
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters

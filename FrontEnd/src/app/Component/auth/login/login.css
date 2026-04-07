@@ -36,6 +36,32 @@
   font-weight: bold;
 }
 
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.divider span {
+  white-space: nowrap;
+}
+
+.google-btn {
+  display: flex;
+  justify-content: center;
+}
+
 .error-banner {
   background: #ffe5e5;
   color: #b30000;

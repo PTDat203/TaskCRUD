@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -19,8 +19,11 @@ import {
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   private authUrl = '/api/Auth';
+  private authAbsoluteUrl = 'https://localhost:7167/api/Auth';
+  // TODO: move to env/config if needed
+  private googleClientId = '705210796305-vgtq1ktp47ui5in07pgmgsd2k9fcjag6.apps.googleusercontent.com';
 
   form = {
     email: '',
@@ -34,6 +37,10 @@ export class LoginComponent {
     private router: Router,
     private authService: AuthService
   ) {}
+
+  ngAfterViewInit(): void {
+    this.waitForGoogleAndRender();
+  }
 
   login(): void {
     this.errorMessage = '';
@@ -54,6 +61,58 @@ export class LoginComponent {
       }),
       catchError((err) => {
         this.errorMessage = getFirstApiErrorMessage(err, 'Đăng nhập thất bại.');
+        return of(null);
+      })
+    ).subscribe();
+  }
+
+  private waitForGoogleAndRender(): void {
+    const start = Date.now();
+    const timer = window.setInterval(() => {
+      const g = (window as any).google;
+      if (g?.accounts?.id) {
+        window.clearInterval(timer);
+        this.renderGoogleButton(g);
+        return;
+      }
+      if (Date.now() - start > 5000) {
+        window.clearInterval(timer);
+        this.errorMessage = 'Không tải được Google Identity Services. Vui lòng refresh trang.';
+      }
+    }, 200);
+  }
+
+  private renderGoogleButton(g: any): void {
+
+    g.accounts.id.initialize({
+      client_id: this.googleClientId,
+      callback: (response: { credential?: string }) => {
+        const idToken = response?.credential ?? '';
+        if (!idToken) return;
+        this.loginWithGoogle(idToken);
+      }
+    });
+
+    const el = document.getElementById('googleBtn');
+    if (!el) return;
+
+    g.accounts.id.renderButton(el, {
+      theme: 'outline',
+      size: 'large',
+      width: 380
+    });
+  }
+
+  private loginWithGoogle(idToken: string): void {
+    this.errorMessage = '';
+    // Use absolute URL to avoid dev-proxy / certificate mismatch issues.
+    this.http.post<AuthPayload>(`${this.authAbsoluteUrl}/google-login`, { idToken }).pipe(
+      tap((res) => {
+        this.authService.applyAuth(res);
+        this.router.navigateByUrl('/tasks');
+      }),
+      catchError((err) => {
+        this.errorMessage = getFirstApiErrorMessage(err, 'Đăng nhập Google thất bại.');
         return of(null);
       })
     ).subscribe();
