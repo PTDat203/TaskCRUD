@@ -41,6 +41,15 @@
 
   <div class="task-list">
     <h3>Danh sách Task ({{ totalItems }})</h3>
+    <div style="margin-bottom: 10px;">
+      <label>Số bản ghi / trang: </label>
+      <select [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+        <option [value]="4">4</option>
+        <option [value]="8">8</option>
+        <option [value]="12">12</option>
+        <option [value]="20">20</option>
+      </select>
+    </div>
     <table *ngIf="filteredTasks.length > 0">
       <thead>
         <tr>

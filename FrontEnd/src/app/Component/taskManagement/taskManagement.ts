@@ -209,6 +209,13 @@ export class TaskManagementComponent implements OnInit {
     for (let i = 1; i <= this.totalPages; i++) pages.push(i);
     return pages;
   }
+  onPageSizeChange(): void {
+    if (this.pageSize < 1) this.pageSize = 1;
+  
+    this.currentPage = 1;
+    this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+    this.updatePageData();
+  }
 
   formatDeadline(dateStr: string): string {
     if (!dateStr) return '';

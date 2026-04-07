@@ -67,6 +67,8 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 
 // Add CORS
 builder.Services.AddCors(options =>
