@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -29,7 +29,8 @@ export class UserManagementComponent implements OnInit {
   constructor(
     private http: HttpClient,
     private router: Router,
-    public authService: AuthService
+    public authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -53,9 +54,11 @@ export class UserManagementComponent implements OnInit {
           ...u,
           role: (u.role ?? '').toUpperCase()
         }));
+        this.cdr.detectChanges();
       }),
       catchError((err) => {
         this.errorMessage = err?.error || 'Không thể tải danh sách user.';
+        this.cdr.detectChanges();
         return of([]);
       })
     ).subscribe();
@@ -88,6 +91,7 @@ export class UserManagementComponent implements OnInit {
       }),
       finalize(() => {
         this.updatingRoleUserId = null;
+        this.cdr.detectChanges();
       })
     ).subscribe();
   }
