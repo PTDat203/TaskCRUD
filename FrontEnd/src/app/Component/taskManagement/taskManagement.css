@@ -123,6 +123,7 @@ h3 {
 table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 thead {
@@ -130,16 +131,35 @@ thead {
   color: white;
 }
 
-th,
+th {
+  padding: 12px 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
 td {
-  padding: 12px 15px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 1px solid #ddd;
+  overflow: hidden;
+}
+
+th:nth-child(1), td:nth-child(1) { width: 50px; text-align: center; }   /* STT */
+th:nth-child(2), td:nth-child(2) { width: 15%; }   /* Tiêu đề */
+th:nth-child(3), td:nth-child(3) { width: 25%; }  /* Mô tả */
+th:nth-child(4), td:nth-child(4) { width: 12%; }  /* Deadline */
+th:nth-child(5), td:nth-child(5) { width: 16%; }  /* Trạng thái */
+th:nth-child(6), td:nth-child(6) { width: 12%; }   /* Ngày tạo */
+th:nth-child(7), td:nth-child(7) { width: 110px; }   /* Thao tác */
+
+.actions-cell {
+  text-align: center;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 5px;
+  justify-content: center;
 }
 
 .btn-edit {

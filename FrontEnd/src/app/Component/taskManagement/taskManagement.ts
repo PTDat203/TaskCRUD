@@ -33,11 +33,13 @@ export class TaskManagementComponent implements OnInit {
   errorMessage = '';
 
   currentPage = 1;
-  pageSize = 4;
+  _pageSize = 5;
   totalItems = 0;
   totalPages = 0;
   deadlineDate = '';
   deadlineTime = '00:00';
+
+  get pageSize(): number { return this._pageSize; }
 
   // Search & filter fields
   searchTitle = '';
@@ -186,6 +188,8 @@ export class TaskManagementComponent implements OnInit {
     const filtered = this.getFilteredTasksList();
     this.totalItems = filtered.length;
     this.totalPages = this.pageSize > 0 ? Math.ceil(this.totalItems / this.pageSize) : 0;
+
+    // Clamp currentPage within valid range
     if (this.currentPage < 1) this.currentPage = 1;
     if (this.totalPages > 0 && this.currentPage > this.totalPages) {
       this.currentPage = this.totalPages;
@@ -222,9 +226,10 @@ export class TaskManagementComponent implements OnInit {
     for (let i = 1; i <= this.totalPages; i++) pages.push(i);
     return pages;
   }
-  onPageSizeChange(): void {
-    if (this.pageSize < 1) this.pageSize = 1;
-  
+
+  onPageSizeChange(newSize: any): void {
+    this._pageSize = parseInt(newSize) || 5;
+    this.filteredTasks = [];
     this.currentPage = 1;
     this.updatePageData();
   }
