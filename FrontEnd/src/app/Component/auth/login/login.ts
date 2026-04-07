@@ -4,7 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, of, tap } from 'rxjs';
-import { AuthPayload, AuthService } from '../../../services/auth.service';
+import {
+  AuthPayload,
+  AuthService,
+  getFirstApiErrorMessage,
+  isValidEmailFormat
+} from '../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -36,13 +41,18 @@ export class LoginComponent {
       return;
     }
 
+    if (!isValidEmailFormat(this.form.email)) {
+      this.errorMessage = 'Email không đúng định dạng.';
+      return;
+    }
+
     this.http.post<AuthPayload>(`${this.authUrl}/login`, this.form).pipe(
       tap((res) => {
         this.authService.applyAuth(res);
         this.router.navigateByUrl('/tasks');
       }),
       catchError((err) => {
-        this.errorMessage = err?.error || 'Đăng nhập thất bại.';
+        this.errorMessage = getFirstApiErrorMessage(err, 'Đăng nhập thất bại.');
         return of(null);
       })
     ).subscribe();

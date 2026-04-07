@@ -8,6 +8,27 @@ export interface AuthPayload {
   role: string;
 }
 
+/** Kiểm tra định dạng email cơ bản (local@domain). */
+export function isValidEmailFormat(email: string): boolean {
+  const trimmed = email.trim();
+  if (!trimmed) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+/** Lấy message lỗi từ API (chuỗi thuần hoặc validation ProblemDetails). */
+export function getFirstApiErrorMessage(err: unknown, fallback: string): string {
+  const e = err as { error?: unknown };
+  if (typeof e?.error === 'string' && e.error.trim()) return e.error;
+  const errors = (e?.error as { errors?: Record<string, string[]> })?.errors;
+  if (errors && typeof errors === 'object') {
+    for (const key of Object.keys(errors)) {
+      const arr = errors[key];
+      if (Array.isArray(arr) && arr.length > 0 && typeof arr[0] === 'string') return arr[0];
+    }
+  }
+  return fallback;
+}
+
 @Injectable({
   providedIn: 'root'
 })
